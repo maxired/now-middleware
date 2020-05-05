@@ -46,4 +46,84 @@ describe('chain', () => {
     chain(dummyMiddleware)(dummyHandler)(req, res);
     expect(res.send).toHaveBeenCalledWith('bar');
   });
+
+  it('should work deal with error sended as param of next', () => {
+    // A dummy Express middleware
+    function errorMiddleware(
+      req: Request,
+      _res: Response,
+      next: NextFunction
+    ): void {
+      next(new Error('errorMiddleware'));
+    }
+
+    function errorCatchMiddleware(
+      err: any,
+      req: Request,
+      _res: Response,
+      next: NextFunction
+    ): void {
+      if (err) {
+        _res.send(err.message);
+        return;
+      }
+      next();
+    }
+
+    // A dummy ZEIT now handler
+    function dummyHandler(req: NowRequest, res: NowResponse): void {
+      expect(req.headers.foo).toBe('foo');
+
+      res.send('bar');
+    }
+
+    const req = { headers: {} } as NowRequest;
+    const res = ({
+      send: jest.fn(),
+    } as unknown) as NowResponse;
+
+    chain(errorMiddleware, errorCatchMiddleware)(dummyHandler)(req, res);
+    expect(res.send).toHaveBeenCalledWith('errorMiddleware');
+    expect(res.send).not.toHaveBeenCalledWith('bar');
+  });
+
+  it('should work deal with error when thrown in the middleware', () => {
+    // A dummy Express middleware
+    function errorThrowMiddleware(
+      req: Request,
+      _res: Response,
+      next: NextFunction
+    ): void {
+      throw new Error('errorThrowMiddleware');
+    }
+
+    function errorCatchMiddleware(
+      err: any,
+      req: Request,
+      _res: Response,
+      next: NextFunction
+    ): void {
+      if (err) {
+        _res.send(err.message);
+        return;
+      }
+      next();
+    }
+
+    // A dummy ZEIT now handler
+    function dummyHandler(req: NowRequest, res: NowResponse): void {
+      expect(req.headers.foo).toBe('foo');
+
+      res.send('bar');
+    }
+
+    const req = { headers: {} } as NowRequest;
+    const res = ({
+      send: jest.fn(),
+    } as unknown) as NowResponse;
+
+    chain(errorThrowMiddleware, errorCatchMiddleware)(dummyHandler)(req, res);
+    expect(res.send).toHaveBeenCalledWith('errorThrowMiddleware');
+    expect(res.send).not.toHaveBeenCalledWith('bar');
+  });
 });

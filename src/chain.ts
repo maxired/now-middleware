@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import { NowRequest, NowResponse } from '@now/node';
-import { RequestHandler } from 'express';
+import { Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from 'express';
 
 type AsyncVoid = void | Promise<void>;
 
@@ -24,26 +24,38 @@ type AsyncVoid = void | Promise<void>;
  */
 export type NowFunction<Req, Res> = (req: Req, res: Res) => AsyncVoid;
 
+function reduceMiddleware (acc: RequestHandler, mid: RequestHandler|ErrorRequestHandler ): RequestHandler{
+  return function (req: Request, res: Response, next: NextFunction): void {
+    acc(req, res, (err) => {
+      if (err) {
+        if(mid.length === 4) {
+           // @ts-ignore
+          return mid(err, req, res, next);
+        }
+        return next(err);
+      }
+      if (mid.length === 4){
+        return next()
+      }
+      try {
+         // @ts-ignore
+        mid(req, res, next, undefined);
+      }catch(e){
+        next(e)
+      }
+    });
+  };  
+}
 /**
  * Combine multiple middleware together.
  *
- * @param middlewares - Functions of form: `function(req, res, next) { ... }`, aka
+ * @param middlewares - Functions of form: `function(req, res, next) { ... }` or `function(err, req, res, next) { ... }`, aka
  * express middlewares.
  *
  * @return - Single combined middleware
  */
-function combineMiddleware(middlewares: RequestHandler[]): RequestHandler {
-  return middlewares.reduce((acc, mid) => {
-    return function (req, res, next): void {
-      acc(req, res, (err) => {
-        if (err) {
-          return next(err);
-        }
-
-        mid(req, res, next);
-      });
-    };
-  });
+function combineMiddleware(middlewares: (RequestHandler|ErrorRequestHandler)[]): RequestHandler|ErrorRequestHandler {
+  return middlewares.reduce(reduceMiddleware, (req: Request, res: Response, next: NextFunction) => next())
 }
 
 /**
@@ -54,7 +66,7 @@ function combineMiddleware(middlewares: RequestHandler[]): RequestHandler {
  * express middlewares.
  */
 export function chain<Req = NowRequest, Res = NowResponse>(
-  ...middlewares: RequestHandler[]
+  ...middlewares: (RequestHandler|ErrorRequestHandler)[]
 ): (fn: NowFunction<Req, Res>) => NowFunction<Req, Res> {
   return function (fn: NowFunction<Req, Res>): NowFunction<Req, Res> {
     return function (req: Req, res: Res): AsyncVoid {
