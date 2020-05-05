@@ -61,11 +61,11 @@ describe('chain', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       err: any,
       _req: Request,
-      _res: Response,
+      res: Response,
       next: NextFunction
     ): void {
       if (err) {
-        _res.send(err.message);
+        res.send(err.message);
         return;
       }
       next();
@@ -102,11 +102,11 @@ describe('chain', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       err: any,
       _req: Request,
-      _res: Response,
+      res: Response,
       next: NextFunction
     ): void {
       if (err) {
-        _res.send(err.message);
+        res.send(err.message);
         return;
       }
       next();
