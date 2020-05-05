@@ -50,7 +50,7 @@ describe('chain', () => {
   it('should work deal with error sended as param of next', () => {
     // A dummy Express middleware
     function errorMiddleware(
-      req: Request,
+      _req: Request,
       _res: Response,
       next: NextFunction
     ): void {
@@ -58,8 +58,9 @@ describe('chain', () => {
     }
 
     function errorCatchMiddleware(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       err: any,
-      req: Request,
+      _req: Request,
       _res: Response,
       next: NextFunction
     ): void {
@@ -90,16 +91,17 @@ describe('chain', () => {
   it('should work deal with error when thrown in the middleware', () => {
     // A dummy Express middleware
     function errorThrowMiddleware(
-      req: Request,
+      _req: Request,
       _res: Response,
-      next: NextFunction
+      _next: NextFunction
     ): void {
       throw new Error('errorThrowMiddleware');
     }
 
     function errorCatchMiddleware(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       err: any,
-      req: Request,
+      _req: Request,
       _res: Response,
       next: NextFunction
     ): void {

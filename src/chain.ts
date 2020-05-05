@@ -15,7 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import { NowRequest, NowResponse } from '@now/node';
-import { Request, Response, NextFunction, RequestHandler, ErrorRequestHandler } from 'express';
+import {
+  ErrorRequestHandler,
+  NextFunction,
+  Request,
+  RequestHandler,
+  Response,
+} from 'express';
 
 type AsyncVoid = void | Promise<void>;
 
@@ -24,27 +30,32 @@ type AsyncVoid = void | Promise<void>;
  */
 export type NowFunction<Req, Res> = (req: Req, res: Res) => AsyncVoid;
 
-function reduceMiddleware (acc: RequestHandler, mid: RequestHandler|ErrorRequestHandler ): RequestHandler{
+function reduceMiddleware(
+  acc: RequestHandler,
+  mid: RequestHandler | ErrorRequestHandler
+): RequestHandler {
   return function (req: Request, res: Response, next: NextFunction): void {
     acc(req, res, (err) => {
       if (err) {
-        if(mid.length === 4) {
-           // @ts-ignore
+        if (mid.length === 4) {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+          // @ts-ignore
           return mid(err, req, res, next);
         }
         return next(err);
       }
-      if (mid.length === 4){
-        return next()
+      if (mid.length === 4) {
+        return next();
       }
       try {
-         // @ts-ignore
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
         mid(req, res, next, undefined);
-      }catch(e){
-        next(e)
+      } catch (e) {
+        next(e);
       }
     });
-  };  
+  };
 }
 /**
  * Combine multiple middleware together.
@@ -54,8 +65,13 @@ function reduceMiddleware (acc: RequestHandler, mid: RequestHandler|ErrorRequest
  *
  * @return - Single combined middleware
  */
-function combineMiddleware(middlewares: (RequestHandler|ErrorRequestHandler)[]): RequestHandler|ErrorRequestHandler {
-  return middlewares.reduce(reduceMiddleware, (req: Request, res: Response, next: NextFunction) => next())
+function combineMiddleware(
+  middlewares: (RequestHandler | ErrorRequestHandler)[]
+): RequestHandler | ErrorRequestHandler {
+  return middlewares.reduce(
+    reduceMiddleware,
+    (_req: Request, _res: Response, next: NextFunction) => next()
+  );
 }
 
 /**
@@ -66,7 +82,7 @@ function combineMiddleware(middlewares: (RequestHandler|ErrorRequestHandler)[]):
  * express middlewares.
  */
 export function chain<Req = NowRequest, Res = NowResponse>(
-  ...middlewares: (RequestHandler|ErrorRequestHandler)[]
+  ...middlewares: (RequestHandler | ErrorRequestHandler)[]
 ): (fn: NowFunction<Req, Res>) => NowFunction<Req, Res> {
   return function (fn: NowFunction<Req, Res>): NowFunction<Req, Res> {
     return function (req: Req, res: Res): AsyncVoid {
